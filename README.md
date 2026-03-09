@@ -60,10 +60,10 @@ El script está diseñado para priorizar la **configuración mediante variables*
 
 ## 🔍 Auditoría Inteligente y Puntuación (Scoring)
 
-El script incluye un sistema de **puntuación de 0 a 100** (Opción 1) que evalúa tu servidor en tiempo real:
-- **Diagnóstico Preciso**: No solo verifica, sino que explica el **Riesgo** técnico de cada fallo (ej: por qué es peligroso el puerto 22).
+El script incluye un sistema de **puntuación de 0 a 100** (Opción 1) que evalúa tu servidor y el estado de tu software:
+- **Gestión de Software**: La opción `i` detecta exactamente qué herramientas te faltan y las instala automáticamente.
+- **Diagnóstico Preciso**: Explica el **Riesgo** técnico de cada fallo.
 - **Nivel de Blindaje**: Clasifica tu servidor como Crítico, Medio o Seguro.
-- **Nginx Security**: Si el script detecta Nginx, realizará una auditoría específica de headers de seguridad, ocultación de versión y SSL.
 
 ## 🛠️ Herramientas de Vanguardia Incluidas
 

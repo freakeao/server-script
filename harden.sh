@@ -149,32 +149,55 @@ select_network_interface() {
 # 3. MÓDULOS DE SEGURIDAD
 # ==============================================================================
 
-# Sección 1: Conceptos Básicos y Preparación
+# Sección 1: Gestión de Herramientas y Preparación
 module_system_basics() {
-    log_banner "SECCIÓN 1: CONCEPTOS BÁSICOS Y PREPARACIÓN"
-    echo -e "En esta etapa actualizaremos el índice de paquetes y el sistema completo."
-    echo -e "También instalaremos las herramientas base necesarias para el resto del script.\n"
+    log_banner "SECCIÓN 1: ACTUALIZACIÓN Y HERRAMIENTAS ESENCIALES"
+    echo -e "En esta etapa actualizaremos el sistema y aseguraremos que todo el software de"
+    echo -e "seguridad esté presente. Sin estas herramientas, el blindaje no es posible.\n"
     
     log_info "Actualizando repositorios y sistema..."
     apt-get update && apt-get upgrade -y
     
-    log_info "Verificando herramientas esenciales..."
-    local tools=("sudo" "curl" "vim" "git" "ufw" "fail2ban" "unattended-upgrades" "logwatch" "lynis" "rkhunter" "chkrootkit" "auditd" "psad" "libpam-pwquality" "apticron" "aide" "sysstat")
-    
-    for tool in "${tools[@]}"; do
-        install_package "$tool"
-    done
+    verify_and_install_essential_tools
     
     if is_installed "aide"; then
         log_info "Inicializando base de datos de AIDE (File Integrity)..."
         aideinit --force --quiet
     fi
-    # ...
-    
+
     log_info "Configurando zona horaria a $TIMEZONE..."
     timedatectl set-timezone "$TIMEZONE"
     
     log_success "Preparación básica completada."
+}
+
+# Nueva función para verificar e instalar todo el software necesario de una vez
+verify_and_install_essential_tools() {
+    log_banner "AUDITORÍA DE SOFTWARE NECESARIO"
+    local tools=("sudo" "curl" "vim" "git" "ufw" "fail2ban" "unattended-upgrades" "logwatch" "lynis" "rkhunter" "chkrootkit" "auditd" "psad" "libpam-pwquality" "apticron" "aide" "sysstat")
+    local missing_tools=()
+
+    echo -e "Estado de las herramientas de seguridad:\n"
+    for tool in "${tools[@]}"; do
+        if is_installed "$tool"; then
+            echo -e "  [${GREEN}INSTALADO${NC}] $tool"
+        else
+            echo -e "  [${RED}FALTA${NC}] $tool"
+            missing_tools+=("$tool")
+        fi
+    done
+
+    if [ ${#missing_tools[@]} -eq 0 ]; then
+        log_success "¡Todo el software necesario está instalado!"
+    else
+        echo -e "\n${YELLOW}Se han detectado ${#missing_tools[@]} herramientas faltantes.${NC}"
+        read -p "¿Deseas instalarlas todas ahora? (s/n): " install_all
+        if [[ $install_all == "s" ]]; then
+            log_info "Instalando software faltante..."
+            apt-get install -y "${missing_tools[@]}"
+            log_success "Software instalado correctamente."
+        fi
+    fi
 }
 
 # Sección 2: Gestión de usuarios y permisos
@@ -436,30 +459,39 @@ setup_admin_user() {
 }
 
 main_menu() {
-    echo -e "\n${BLUE}===========================================${NC}"
-    echo -e "${BLUE}  Debian 13 Security Hardening & Audit     ${NC}"
-    echo -e "${BLUE}===========================================${NC}"
-    echo "1) Auditar Seguridad del Sistema (Solo verificar)"
-    echo "2) Aplicar Fortalecimiento Completo (Usa variables)"
-    echo "3) Ejecución por Módulos (Paso a paso)"
-    echo "4) Configurar Usuario Administrador (Actual: $SUDO_USER)"
-    echo "5) Guía de Secciones (Qué hace el script)"
-    echo "6) Mostrar Variables y Red Detectada"
+    echo -e "\n${BLUE}==============================================${NC}"
+    echo -e "${BLUE}     Debian 13 Security Hardening & Audit     ${NC}"
+    echo -e "${BLUE}==============================================${NC}"
+    echo -e "${YELLOW}--- FASE 1: DIAGNÓSTICO ---${NC}"
+    echo "1) Auditar Seguridad y Software (Ver estado)"
+    echo "2) Mostrar Variables y Red Detectada"
+    
+    echo -e "\n${YELLOW}--- FASE 2: INSTALACIÓN (CRÍTICO) ---${NC}"
+    echo "i) INSTALAR SOFTWARE DE SEGURIDAD FALTANTE"
+    
+    echo -e "\n${YELLOW}--- FASE 3: CONFIGURACIÓN Y BLINDAJE ---${NC}"
+    echo "3) Aplicar Fortalecimiento Completo (Recomendado)"
+    echo "4) Ejecución por Módulos (Personalizado)"
+    echo "5) Configurar Usuario Administrador (Actual: $SUDO_USER)"
+    
+    echo -e "\n${YELLOW}--- OTROS ---${NC}"
+    echo "6) Guía de Secciones (Ayuda)"
     echo "q) Salir"
-    echo "==========================================="
+    echo "=============================================="
     read -p "Selecciona una opción: " choice
 
     case $choice in
         1) run_audit ;;
-        2) 
+        2) show_variables ;;
+        i) verify_and_install_essential_tools; main_menu ;;
+        3) 
             read -p "¿Deseas cambiar el usuario administrador ($SUDO_USER) antes de empezar? (s/n): " change
             [[ $change == "s" ]] && setup_admin_user
             run_full_hardening 
             ;;
-        3) run_selective ;;
-        4) setup_admin_user; main_menu ;;
-        5) show_help ;;
-        6) show_variables ;;
+        4) run_selective ;;
+        5) setup_admin_user; main_menu ;;
+        6) show_help ;;
         q) exit 0 ;;
         *) main_menu ;;
     esac
