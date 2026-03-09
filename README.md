@@ -9,10 +9,9 @@ Este script ha sido diseñado para automatizar el proceso de auditoría y fortal
 ## 🚀 Inicio Rápido
 
 1. **Requisitos**: Debian 13 y privilegios de `root`.
-2. **Configuración**: Abre `harden.sh` y edita la **Sección de Variables** al inicio con tu usuario administrador deseado (`SUDO_USER`) y otros ajustes.
-3. **Descarga**: Coloca el script en tu servidor.
-4. **Permisos**: `chmod +x harden.sh`
-5. **Ejecución**: `sudo ./harden.sh`
+2. **Configuración**: Edita la **Sección de Variables** en `harden.sh` (opcional pero recomendado).
+3. **Instalación de Software**: Ejecuta el script y selecciona la opción `i` para instalar todas las herramientas de seguridad necesarias de una vez.
+4. **Ejecución**: `sudo ./harden.sh`
 
 ---
 
