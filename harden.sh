@@ -2,6 +2,7 @@
 
 ################################################################################
 # Script de Auditoría y Fortalecimiento de Seguridad para Debian 13 (Trixie)
+# Creado por: Victor Leon
 # Basado en: https://github.com/imthenachoman/How-To-Secure-A-Linux-Server
 ################################################################################
 

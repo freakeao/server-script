@@ -1,5 +1,7 @@
 # Documentación: Script de Seguridad Debian 13 (Trixie)
 
+**Creado por: Victor Leon**
+
 Este script ha sido diseñado para automatizar el proceso de auditoría y fortalecimiento de seguridad (hardening) en servidores Debian 13, basado en las mejores prácticas de la comunidad y la guía "How-To-Secure-A-Linux-Server".
 
 ---
