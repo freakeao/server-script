@@ -112,7 +112,7 @@ install_package() {
     else
         log_warn "El paquete '$1' NO está instalado."
         read -p "¿Deseas instalar '$1' ahora? (s/n): " confirm
-        if [[ $confirm == "s" ]]; then
+        if [[ "$confirm" == "s" ]]; then
             apt-get install -y "$1"
             log_success "'$1' instalado con éxito."
         fi
@@ -192,7 +192,7 @@ verify_and_install_essential_tools() {
     else
         echo -e "\n${YELLOW}Se han detectado ${#missing_tools[@]} herramientas faltantes.${NC}"
         read -p "¿Deseas instalarlas todas ahora? (s/n): " install_all
-        if [[ $install_all == "s" ]]; then
+        if [[ "$install_all" == "s" ]]; then
             log_info "Instalando software faltante..."
             apt-get install -y "${missing_tools[@]}"
             log_success "Software instalado correctamente."
@@ -438,7 +438,6 @@ show_help() {
     echo -e "4. ¡NO CIERRES tu sesión hasta probar el nuevo puerto SSH!"
     echo -e "===================================================="
     read -p "Presiona Enter para volver al menú..."
-    main_menu
 }
 
 setup_admin_user() {
@@ -454,47 +453,49 @@ setup_admin_user() {
     read -p "¿Es '$SUDO_GROUP' el nombre correcto del grupo sudo? (s/n): " confirm_group
     if [[ $confirm_group != "s" ]]; then
         read -p "Introduce el nombre del grupo administrativo (ej: sudo, wheel): " input_group
-        [[ -n "$input_group" ] ] && SUDO_GROUP="$input_group"
+        [[ -n "$input_group" ]] && SUDO_GROUP="$input_group"
     fi
 }
 
 main_menu() {
-    echo -e "\n${BLUE}==============================================${NC}"
-    echo -e "${BLUE}     Debian 13 Security Hardening & Audit     ${NC}"
-    echo -e "${BLUE}==============================================${NC}"
-    echo -e "${YELLOW}--- FASE 1: DIAGNÓSTICO ---${NC}"
-    echo "1) Auditar Seguridad y Software (Ver estado)"
-    echo "2) Mostrar Variables y Red Detectada"
-    
-    echo -e "\n${YELLOW}--- FASE 2: INSTALACIÓN (CRÍTICO) ---${NC}"
-    echo "i) INSTALAR SOFTWARE DE SEGURIDAD FALTANTE"
-    
-    echo -e "\n${YELLOW}--- FASE 3: CONFIGURACIÓN Y BLINDAJE ---${NC}"
-    echo "3) Aplicar Fortalecimiento Completo (Recomendado)"
-    echo "4) Ejecución por Módulos (Personalizado)"
-    echo "5) Configurar Usuario Administrador (Actual: $SUDO_USER)"
-    
-    echo -e "\n${YELLOW}--- OTROS ---${NC}"
-    echo "6) Guía de Secciones (Ayuda)"
-    echo "q) Salir"
-    echo "=============================================="
-    read -p "Selecciona una opción: " choice
+    while true; do
+        echo -e "\n${BLUE}==============================================${NC}"
+        echo -e "${BLUE}     Debian 13 Security Hardening & Audit     ${NC}"
+        echo -e "${BLUE}==============================================${NC}"
+        echo -e "${YELLOW}--- FASE 1: DIAGNÓSTICO ---${NC}"
+        echo "1) Auditar Seguridad y Software (Ver estado)"
+        echo "2) Mostrar Variables y Red Detectada"
+        
+        echo -e "\n${YELLOW}--- FASE 2: INSTALACIÓN (CRÍTICO) ---${NC}"
+        echo "i) INSTALAR SOFTWARE DE SEGURIDAD FALTANTE"
+        
+        echo -e "\n${YELLOW}--- FASE 3: CONFIGURACIÓN Y BLINDAJE ---${NC}"
+        echo "3) Aplicar Fortalecimiento Completo (Recomendado)"
+        echo "4) Ejecución por Módulos (Personalizado)"
+        echo "5) Configurar Usuario Administrador (Actual: $SUDO_USER)"
+        
+        echo -e "\n${YELLOW}--- OTROS ---${NC}"
+        echo "6) Guía de Secciones (Ayuda)"
+        echo "q) Salir"
+        echo "=============================================="
+        read -p "Selecciona una opción: " choice
 
-    case $choice in
-        1) run_audit ;;
-        2) show_variables ;;
-        i) verify_and_install_essential_tools; main_menu ;;
-        3) 
-            read -p "¿Deseas cambiar el usuario administrador ($SUDO_USER) antes de empezar? (s/n): " change
-            [[ $change == "s" ]] && setup_admin_user
-            run_full_hardening 
-            ;;
-        4) run_selective ;;
-        5) setup_admin_user; main_menu ;;
-        6) show_help ;;
-        q) exit 0 ;;
-        *) main_menu ;;
-    esac
+        case $choice in
+            1) run_audit ;;
+            2) show_variables ;;
+            i) verify_and_install_essential_tools ;;
+            3) 
+                read -p "¿Deseas cambiar el usuario administrador ($SUDO_USER) antes de empezar? (s/n): " change
+                [[ "$change" == "s" ]] && setup_admin_user
+                run_full_hardening 
+                ;;
+            4) run_selective ;;
+            5) setup_admin_user ;;
+            6) show_help ;;
+            q) exit 0 ;;
+            *) log_warn "Opción no válida." ;;
+        esac
+    done
 }
 
 # Muestra la configuración actual para que el usuario verifique antes de actuar
@@ -514,7 +515,6 @@ show_variables() {
     ip -brief addr show | awk '{print "Interfaz: " $1 " -> " $3}'
     
     read -p "Presiona Enter para volver..."
-    main_menu
 }
 
 # Función auxiliar para puntuar
@@ -568,7 +568,7 @@ run_audit() {
 
     # 1. Sistema Base (10 pts)
     echo -n "1. Sistema actualizado: "
-    if add_score 10 "apt-get --simulate upgrade | grep -q '0 upgraded, 0 newly installed'"; then
+    if add_score 10 "[ -z \"\$(apt-get -s upgrade | grep '^Inst ')\" ]"; then
         log_success "[OK] (+10)"
     else
         log_warn "[FALLO] El sistema tiene parches pendientes. Riesgo: Exploits conocidos."
@@ -613,7 +613,7 @@ run_audit() {
     fi
 
     # 5. Sistema y Polítcas (20 pts)
-    echo -n "7. Hardening Sysctl (Kernal): "
+    echo -n "7. Hardening Sysctl (Kernel): "
     if add_score 10 "ls /etc/sysctl.d/99-security-harden.conf"; then
         log_success "[OK] (+10)"
     else
@@ -650,36 +650,36 @@ run_audit() {
     [ $SCORE_TOTAL -lt 90 ] && echo "- Ejecuta la opción 2 para aplicar todas las mejoras faltantes."
     
     read -p "Presiona Enter para volver al menú..."
-    main_menu
 }
 
 # Permite al usuario elegir qué secciones aplicar
 run_selective() {
-    echo -e "\nFortalecimiento por Módulos (Paso a paso):"
-    echo "1) Conceptos Básicos (Actualización y Herramientas)"
-    echo "2) Aseguramiento de Usuarios"
-    echo "3) Aseguramiento de SSH"
-    echo "4) Seguridad de Red (UFW/Fail2Ban/PSAD)"
-    echo "5) Refuerzos Extra (PAM/Auditd)"
-    echo "6) Antivirus (ClamAV)"
-    echo "7) Fortalecimiento del Sistema (Sysctl/Updates)"
-    echo "8) Monitoreo y Auditoría"
-    echo "r) Regresar al menú principal"
-    read -p "Selecciona el módulo a ejecutar: " sel
-    
-    case $sel in
-        1) module_system_basics ;;
-        2) module_user_hardening ;;
-        3) module_ssh_hardening ;;
-        4) module_network_security ;;
-        5) module_extra_hardening ;;
-        6) module_antivirus_clamav ;;
-        7) module_system_hardening ;;
-        8) module_monitoring_auditing ;;
-        r) main_menu ;;
-        *) run_selective ;;
-    esac
-    run_selective
+    while true; do
+        echo -e "\nFortalecimiento por Módulos (Paso a paso):"
+        echo "1) Conceptos Básicos (Actualización y Herramientas)"
+        echo "2) Aseguramiento de Usuarios"
+        echo "3) Aseguramiento de SSH"
+        echo "4) Seguridad de Red (UFW/Fail2Ban/PSAD)"
+        echo "5) Refuerzos Extra (PAM/Auditd)"
+        echo "6) Antivirus (ClamAV)"
+        echo "7) Fortalecimiento del Sistema (Sysctl/Updates)"
+        echo "8) Monitoreo y Auditoría"
+        echo "r) Regresar al menú principal"
+        read -p "Selecciona el módulo a ejecutar: " sel
+        
+        case $sel in
+            1) module_system_basics ;;
+            2) module_user_hardening ;;
+            3) module_ssh_hardening ;;
+            4) module_network_security ;;
+            5) module_extra_hardening ;;
+            6) module_antivirus_clamav ;;
+            7) module_system_hardening ;;
+            8) module_monitoring_auditing ;;
+            r) return 0 ;;
+            *) log_warn "Opción no válida." ;;
+        esac
+    done
 }
 
 # Ejecuta todo el proceso secuencialmente
@@ -714,7 +714,6 @@ run_full_hardening() {
     log_success "\n¡Proceso de fortalecimiento completo finalizado!"
     log_warn "POR FAVOR, VERIFICA EL ACCESO SSH EN EL PUERTO $SSH_PORT EN UNA NUEVA VENTANA."
     read -p "Presiona Enter para volver al menú..."
-    main_menu
 }
 
 # Inicio del script
